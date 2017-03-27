@@ -24,7 +24,7 @@ class App(object):
         for i in range(3):
             self.buttons.append([])
             for j in range(3):
-                b = Gtk.Button.new_with_label("{}-{}".format(i, j))
+                b = Gtk.Button()
                 self.buttons[i].append(b)
                 grid.attach(b, i, j, 1, 1)
                 b.connect("clicked", self.kliknieto, i, j)

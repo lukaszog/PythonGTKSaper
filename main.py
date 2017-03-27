@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-# wymagamy biblioteki w wersji min 3.0
 import gi
 from random import randrange
 
@@ -19,14 +17,33 @@ class Cell:
         self.neighbormines = 0
         self.button = SaperButton()
 
-    def get_button(self):
-        return self.button
-
     def place_mine(self):
         self.mine = True
+        label = Gtk.Label("M")
+        label.set_no_show_all(True)
+        self.button.add(label)
 
     def is_mine(self):
         return self.mine
+
+    def discover(self):
+        print 'discover'
+        label = self.button.get_child()
+        if label is not None:
+            label.show()
+        self.button.set_sensitive(False)
+
+    def is_discovered(self):
+        return not self.button.get_visible()
+
+    def set_nighbromines(self, number):
+        self.neighbormines = number
+
+    def get_nighbromines(self):
+        return self.neighbormines
+
+    def get_button(self):
+        return self.button
 
 
 class SaperGrid(Gtk.Grid):
@@ -36,13 +53,14 @@ class SaperGrid(Gtk.Grid):
         self.cells = []
         self.ratio = ratio
         Gtk.Grid.__init__(self)
-        for column in range(rows):
-            for row in range(cols):
+
+        for row in range(rows):
+            for col in range(cols):
                 cell = Cell()
                 self.cells.append(cell)
-                self.attach(cell.get_button(), column, row, 1, 1)
+                self.attach(cell.get_button(), row, col, 1, 1)
+
         self.place_mines()
-        self.place_labels()
 
     def get_cells(self):
         return self.cells
@@ -54,29 +72,30 @@ class SaperGrid(Gtk.Grid):
     def place_mines(self):
         mines = 0
         while mines < (self.rows * self.cols * self.ratio):
+
             row = randrange(0, self.rows)
             col = randrange(0, self.cols)
 
             i = self.get_index(row, col)
 
             if not self.cells[i].is_mine():
-
-                print 'Stawiam mine w polu {} {}'.format(col, row)
-
                 mines += 1
                 self.cells[i].place_mine()
-                button = Gtk.Button()
-                label = Gtk.Label("M")
-                label.set_use_underline(True)
-                button.add(label)
-                self.attach(button, col, row, 1, 1)
 
-
-    def place_labels(self):
-        pass
+        for i, val in enumerate(self.cells):
+            print self.cells[i]
 
     def get_index(self, row, col):
         return (row * self.cols) + col
+
+    def discover_cell(self, row, col):
+        index = self.get_index(row, col)
+        print 'index', index
+        self.cells[index].discover()
+
+    def discover_all_cells(self):
+        for cell in self.cells:
+            cell.discover()
 
 
 class Saper:
@@ -87,32 +106,27 @@ class Saper:
         self.vbox = Gtk.VBox()
         self.window.add(self.vbox)
         self.create_grid(rows, cols)
-        self.grid = SaperGrid(rows, cols, 0.10)
+        self.window.connect('destroy', Gtk.main_quit)
 
     def create_grid(self, rows, cols):
+
         self.grid = SaperGrid(rows, cols, 0.10)
 
         for i, cell in enumerate(self.grid.get_cells()):
-            print 'cell'
-            print i
-            cell.get_button().connect('button-press-event', self.clicked_handler, i, i)
+            (row, col) = self.grid.get_row_col_button(i)
+            print 'Button connect in col {} row {}'.format(col, row)
+            cell.get_button().connect('clicked', self.clicked_handler, row, col)
 
+        self.grid.set_column_homogeneous(True)
+        self.grid.set_row_homogeneous(True)
         self.vbox.pack_start(self.grid, expand=True, fill=True, padding=0)
 
-    def clicked_handler(self, widget, event, index, col):
+    def clicked_handler(self, button, row, col):
+        cell_index = self.grid.get_index(row, col)
+        self.grid.discover_cell(row, col)
 
-        (row, col) = self.grid.get_row_col_button(index)
-        print row
-        print col
-        cell = self.grid.get_cells()[index]
-
-    @staticmethod
-    def exit(self, widget, data=None):
-        Gtk.main_quit()
 
 
 win = Saper(5, 5)
 win.window.show_all()
 Gtk.main()
-
-
